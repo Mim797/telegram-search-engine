@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Search</title>
+<style>
+  :root{
+    --bg:#f5f6fa; --card:#ffffff; --text:#1c1e26; --muted:#7b8094;
+    --accent:#6c5ce7; --accent2:#00cec9; --border:#e3e6ef; --shadow:0 10px 40px rgba(108,92,231,.15);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f1117; --card:#1a1d27; --text:#eceef5; --muted:#8a90a6;
+      --border:#2a2e3d; --shadow:0 10px 40px rgba(0,0,0,.5);
+    }
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg); color:var(--text); min-height:100vh;
+    display:flex; flex-direction:column; align-items:center; padding:0 16px 60px;
+  }
+  .hero{
+    width:100%; max-width:760px; text-align:center;
+    margin-top:12vh; transition:margin .4s ease;
+  }
+  body.searched .hero{margin-top:36px}
+  h1{
+    font-size:clamp(2rem,6vw,3.2rem); font-weight:800; letter-spacing:-1px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .sub{color:var(--muted); margin:8px 0 28px; font-size:1rem}
+  body.searched .sub{display:none}
+
+  .bar{
+    display:flex; align-items:center; gap:8px;
+    background:var(--card); border:1px solid var(--border);
+    border-radius:60px; padding:8px 8px 8px 22px; box-shadow:var(--shadow);
+    transition:border-color .2s, transform .2s;
+  }
+  .bar:focus-within{border-color:var(--accent); transform:translateY(-2px)}
+  .bar input{
+    flex:1; border:none; outline:none; background:transparent;
+    color:var(--text); font-size:1.05rem; padding:10px 0; min-width:0;
+  }
+  .bar input::placeholder{color:var(--muted)}
+  .bar button{
+    border:none; cursor:pointer; color:#fff; font-weight:700; font-size:.95rem;
+    padding:12px 26px; border-radius:50px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    transition:transform .15s, opacity .15s;
+  }
+  .bar button:hover{opacity:.9; transform:scale(1.04)}
+  .bar button:active{transform:scale(.97)}
+
+  .results{
+    width:100%; max-width:760px; margin-top:28px;
+    background:var(--card); border:1px solid var(--border);
+    border-radius:20px; padding:12px 20px; box-shadow:var(--shadow);
+    display:none;
+  }
+  body.searched .results{display:block}
+
+  /* hide Google's default search box, we use our own */
+  .results .gsc-control-cse{background:transparent!important;border:none!important;padding:0!important}
+  .results .gsc-search-box{display:none!important}
+  .results .gsc-results-wrapper-nooverlay{background:transparent!important}
+  .results .gs-title,.results .gs-title *{color:var(--accent)!important;text-decoration:none!important;font-size:1.1rem!important}
+  .results .gs-title:hover{text-decoration:underline!important}
+  .results .gs-snippet{color:var(--text)!important;opacity:.85}
+  .results .gsc-url-top, .results .gs-visibleUrl{color:var(--muted)!important}
+  .results .gsc-webResult.gsc-result{background:transparent!important;border:none!important;border-bottom:1px solid var(--border)!important;padding:16px 0!important}
+  .results .gsc-cursor-page{color:var(--text)!important;background:var(--bg)!important;border-radius:8px;padding:4px 10px!important}
+  .results .gsc-cursor-current-page{background:var(--accent)!important;color:#fff!important}
+  .results .gsc-above-wrapper-area{border-bottom:1px solid var(--border)!important}
+  .results .gsc-orderby-label,.results .gsc-result-info{color:var(--muted)!important}
+  .results .gsc-selected-option-container{background:var(--bg)!important;color:var(--text)!important}
+  .results .gs-image-box img{border-radius:8px}
+  .results .gsc-tabHeader.gsc-tabhActive{border-color:var(--accent)!important;color:var(--accent)!important}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Search</h1>
+  <p class="sub">Écris ce que tu cherches et appuie sur Entrée</p>
+
+  <form class="bar" id="searchForm" autocomplete="off">
+    <input id="q" type="text" placeholder="Chercher..." autofocus>
+    <button type="submit">Search</button>
+  </form>
+</div>
+
+<div class="results">
+  <!-- Google CSE (code dyalek) -->
+  <div class="gcse-search" data-gname="mysearch"></div>
+</div>
+
+<!-- Google CSE script -->
+<script async src="https://cse.google.com/cse.js?cx=05893e23b7ca3404c"></script>
+
+<script>
+  const form = document.getElementById('searchForm');
+  const input = document.getElementById('q');
+
+  function runSearch(query){
+    if(!query.trim()) return;
+    document.body.classList.add('searched');
+    const el = window.google && google.search && google.search.cse && google.search.cse.element.getElement('mysearch');
+    if(el){
+      el.execute(query);
+    }else{
+      // CSE mazal ma tcharjach, n3awdou n7awlou
+      setTimeout(()=>runSearch(query), 300);
+    }
+    // nkhaliw l'URL fiha la requête (?q=...)
+    history.replaceState(null,'','?q='+encodeURIComponent(query));
+  }
+
+  form.addEventListener('submit', e=>{
+    e.preventDefault();
+    runSearch(input.value);
+  });
+
+  // ila l'URL fiha ?q=... n'executiw direct
+  const initial = new URLSearchParams(location.search).get('q');
+  if(initial){ input.value = initial; runSearch(initial); }
+</script>
+</body>
+</html>
